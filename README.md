@@ -190,5 +190,4 @@ This project transforms traditional safety apps into an **AI Safety Companion** 
 ---
 
 # 👩‍💻 Team
-
 Developed as part of a **Hackathon Project** focused on improving women's safety using AI and modern web technologies.
