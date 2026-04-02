@@ -19,7 +19,6 @@ In such situations:
 There is a need for a **smart safety assistant** that can guide and support users in real time.
 
 ---
-
 # 🚀 Solution
 
 Our project introduces an **AI Safety Companion** that acts like a trusted person on a phone call during emergencies.
