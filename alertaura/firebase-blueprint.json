@@ -1,0 +1,94 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "Stores user profile information and security settings.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "The unique identifier for the user." },
+        "displayName": { "type": "string", "description": "The user's full name." },
+        "email": { "type": "string", "format": "email", "description": "The user's email address." },
+        "photoURL": { "type": "string", "format": "uri", "description": "The user's profile photo URL." },
+        "role": { "type": "string", "enum": ["admin", "user"], "description": "The user's role in the system." },
+        "auraSensitivity": { "type": "string", "enum": ["Low", "Medium", "High"], "description": "The sensitivity level for AI threat detection." },
+        "autoDetect": { "type": "boolean", "description": "Whether auto-detection is enabled." },
+        "emergencyContacts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": { "type": "string" },
+              "relation": { "type": "string" },
+              "phone": { "type": "string" },
+              "status": { "type": "string" }
+            }
+          }
+        }
+      },
+      "required": ["uid", "email"]
+    },
+    "Alert": {
+      "title": "SOS Alert",
+      "description": "Represents an emergency alert triggered by a user.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "The UID of the user who triggered the alert." },
+        "timestamp": { "type": "string", "format": "date-time", "description": "When the alert was triggered." },
+        "location": {
+          "type": "object",
+          "properties": {
+            "latitude": { "type": "number" },
+            "longitude": { "type": "number" }
+          }
+        },
+        "status": { "type": "string", "enum": ["active", "resolved", "false-alarm"] },
+        "event": { "type": "string", "description": "Description of the alert event." }
+      },
+      "required": ["uid", "timestamp", "status"]
+    },
+    "SafePoint": {
+      "title": "Safe Point",
+      "description": "A user-defined safe location.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "The owner of the safe point." },
+        "name": { "type": "string" },
+        "latitude": { "type": "number" },
+        "longitude": { "type": "number" },
+        "type": { "type": "string", "enum": ["home", "work", "gym", "other"] }
+      },
+      "required": ["uid", "name", "latitude", "longitude"]
+    },
+    "NeuralScan": {
+      "title": "Neural Scan",
+      "description": "Results of an AI neural scan.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "auraStability": { "type": "string" },
+        "threatLevel": { "type": "string" },
+        "confidence": { "type": "number" }
+      },
+      "required": ["uid", "timestamp"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profile documents."
+    },
+    "/alerts/{alertId}": {
+      "schema": "Alert",
+      "description": "Emergency alert documents."
+    },
+    "/users/{userId}/safepoints/{safepointId}": {
+      "schema": "SafePoint",
+      "description": "User-specific safe points."
+    },
+    "/users/{userId}/scans/{scanId}": {
+      "schema": "NeuralScan",
+      "description": "User-specific AI scan results."
+    }
+  }
+}

@@ -1,0 +1,5 @@
+{
+  "name": "AlertAura",
+  "description": "A celestial guardian personal security application powered by AI, providing real-time threat analysis, emergency response, and safe navigation.",
+  "requestFramePermissions": ["geolocation", "microphone"]
+}
