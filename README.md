@@ -5,7 +5,6 @@ An **AI-powered Women Safety Web Application** designed to assist users in unsaf
 The system simulates a **phone call safety assistant**, guides users to nearby safe places, and allows quick emergency alerts.
 
 ---
-
 # 💡 Problem Statement
 
 Women often face unsafe or uncomfortable situations in public spaces such as isolated streets, late-night travel, or unfamiliar areas.
