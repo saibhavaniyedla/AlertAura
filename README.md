@@ -1,17 +1,5 @@
 # 🟣 AlertAura - AI Safety Companion Web App
 
-<p align="center">
-  <img src="https://capsule-render.vercel.app/api?type=waving&color=0:8A2BE2,50:FF4F9A,100:00C9FF&height=220&section=header&text=AlertAura&fontSize=55&fontColor=ffffff&animation=fadeIn&fontAlignY=38&desc=AI-Powered%20Women%20Safety%20Companion%20Application&descAlignY=58&descSize=18" />
-</p>
-
-<p align="center">
-  <img src="https://img.shields.io/badge/Project-AI%20Safety%20Companion-8A2BE2?style=for-the-badge" />
-  <img src="https://img.shields.io/badge/Domain-Women%20Safety-FF4F9A?style=for-the-badge" />
-  <img src="https://img.shields.io/badge/Status-Improving-00C9FF?style=for-the-badge" />
-</p>
-
----
-
 ## 📌 Overview
 
 **AlertAura** is an **AI-powered Women Safety Companion Web Application** designed to support users during unsafe, uncomfortable, or emergency situations.
