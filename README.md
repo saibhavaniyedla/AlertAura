@@ -202,6 +202,7 @@ cd AlertAura
 ```bash
 cd alertaura
 ```
+Then create Google API key add it in firebase-applet-config.json
 
 ---
 
