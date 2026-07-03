@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Safety Call Assistant</title>
+  <style>
+    /* ---------- Theme ---------- */
+    :root {
+      --bg-deep: #10242a;
+      --bg-soft: #21424c;
+      --panel: #f8fbfd;
+      --line: #d5e3ea;
+      --text: #14242c;
+      --muted: #4b6571;
+      --accent: #0f7d8f;
+      --accent-strong: #0a6070;
+      --danger: #c6423a;
+      --danger-strong: #9f342d;
+      --assistant: #e8f4ff;
+      --user: #f2f5f8;
+      --ok-bg: #e8f8ef;
+      --ok-text: #186a3b;
+      --shadow: 0 18px 40px rgba(7, 26, 33, 0.2);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+      background:
+        radial-gradient(circle at 15% 10%, rgba(255, 255, 255, 0.12), transparent 28%),
+        radial-gradient(circle at 85% 80%, rgba(255, 255, 255, 0.08), transparent 24%),
+        linear-gradient(130deg, var(--bg-deep), var(--bg-soft));
+      display: grid;
+      place-items: center;
+      padding: 14px;
+      color: var(--text);
+    }
+
+    .app-shell {
+      width: min(980px, 100%);
+      background: var(--panel);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .topbar {
+      padding: 16px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      background: linear-gradient(180deg, #ffffff, #f3f9fc);
+    }
+
+    .app-title {
+      margin: 0;
+      font-size: 1.08rem;
+      font-weight: 700;
+    }
+
+    .status-pill {
+      font-size: 0.88rem;
+      padding: 6px 11px;
+      border-radius: 999px;
+      background: var(--ok-bg);
+      color: var(--ok-text);
+      white-space: nowrap;
+    }
+
+    .screen {
+      display: none;
+      padding: 18px;
+      min-height: 72vh;
+    }
+
+    .screen.active {
+      display: block;
+    }
+
+    .centered {
+      min-height: 66vh;
+      display: grid;
+      place-content: center;
+      justify-items: center;
+      text-align: center;
+      gap: 12px;
+    }
+
+    .subtitle {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.96rem;
+      max-width: 500px;
+    }
+
+    button {
+      border: 0;
+      border-radius: 12px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      padding: 11px 15px;
+      transition: transform 0.15s ease, filter 0.2s ease;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      filter: brightness(0.98);
+    }
+
+    .btn-main {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .btn-main:hover {
+      background: var(--accent-strong);
+    }
+
+    .btn-danger {
+      background: var(--danger);
+      color: #fff;
+    }
+
+    .btn-danger:hover {
+      background: var(--danger-strong);
+    }
+
+    .btn-soft {
+      background: #e9f1f6;
+      color: #17333d;
+      border: 1px solid #cfdee7;
+    }
+
+    .incoming-card {
+      width: min(440px, 100%);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: #ffffff;
+      padding: 18px;
+      box-shadow: 0 10px 28px rgba(20, 44, 54, 0.12);
+      display: grid;
+      gap: 12px;
+    }
+
+    .caller {
+      font-size: 1.1rem;
+      margin: 0;
+      font-weight: 700;
+    }
+
+    .ringing {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .action-row {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .call-layout {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: 1.2fr 0.8fr;
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #ffffff;
+      overflow: hidden;
+    }
+
+    .panel-head {
+      padding: 12px;
+      border-bottom: 1px solid var(--line);
+      background: #f5fbff;
+      font-weight: 700;
+      font-size: 0.95rem;
+    }
+
+    #messages {
+      height: min(54vh, 510px);
+      overflow-y: auto;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      background: linear-gradient(180deg, #fbfdff, #f2f7fa);
+    }
+
+    .message {
+      max-width: 88%;
+      padding: 12px 14px;
+      border-radius: 12px;
+      line-height: 1.38;
+      border: 1px solid var(--line);
+      font-size: 0.95rem;
+    }
+
+    .assistant-msg {
+      background: var(--assistant);
+      align-self: flex-start;
+    }
+
+    .user-msg {
+      background: var(--user);
+      align-self: flex-end;
+    }
+
+    .controls {
+      border-top: 1px solid var(--line);
+      padding: 12px;
+      display: grid;
+      gap: 10px;
+      background: #f7fbfe;
+    }
+
+    .row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    input[type="text"] {
+      flex: 1;
+      min-width: 180px;
+      padding: 12px;
+      border-radius: 10px;
+      border: 1px solid var(--line);
+      font-size: 0.95rem;
+    }
+
+    .location-wrap {
+      padding: 12px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .meta {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .coords {
+      padding: 9px 10px;
+      border-radius: 10px;
+      border: 1px dashed #b7cad6;
+      background: #f8fcff;
+      font-size: 0.92rem;
+    }
+
+    .places {
+      margin: 0;
+      padding-left: 18px;
+      display: grid;
+      gap: 6px;
+      font-size: 0.92rem;
+    }
+
+    .map {
+      width: 100%;
+      height: 260px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+    }
+
+    @media (max-width: 640px) {
+      .call-layout {
+        grid-template-columns: 1fr;
+      }
+
+      #messages {
+        height: 44vh;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app-shell">
+    <header class="topbar">
+      <h1 class="app-title">AI Safety Call Assistant</h1>
+      <span class="status-pill" id="statusPill">Ready</span>
+    </header>
+
+    <!-- Screen 1: Start page -->
+    <section class="screen active" id="startScreen">
+      <div class="centered">
+        <h2>Need support right now?</h2>
+        <p class="subtitle">
+          Start a simulated safety call with a calm assistant that can talk, listen, and guide you to nearby crowded places.
+        </p>
+        <button id="startCallBtn" class="btn-main">Start Safety Call</button>
+      </div>
+    </section>
+
+    <!-- Screen 2: Fake incoming call -->
+    <section class="screen" id="incomingScreen">
+      <div class="centered">
+        <div class="incoming-card">
+          <p class="ringing">Incoming call...</p>
+          <h2 class="caller">Safety Assistant</h2>
+          <div class="action-row">
+            <button id="answerBtn" class="btn-main">Answer</button>
+            <button id="endIncomingBtn" class="btn-danger">End Call</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Screen 3: Active call -->
+    <section class="screen" id="activeCallScreen">
+      <div class="call-layout">
+        <section class="panel">
+          <div class="panel-head">Call Conversation</div>
+          <div id="messages" aria-live="polite"></div>
+
+          <div class="controls">
+            <div class="row">
+              <input id="userInput" type="text" placeholder="Type if microphone is unavailable..." />
+              <button id="sendBtn" class="btn-soft">Send</button>
+            </div>
+            <div class="row">
+              <button id="micBtn" class="btn-main">Speak Response</button>
+              <button id="toggleVoiceBtn" class="btn-soft">Voice Replies: On</button>
+              <button id="endActiveBtn" class="btn-danger">End Call</button>
+            </div>
+          </div>
+        </section>
+
+        <aside class="panel">
+          <div class="panel-head">Location and Nearby Safe Spots</div>
+          <div class="location-wrap">
+            <p class="meta">Current coordinates:</p>
+            <div class="coords" id="coords">Waiting for location permission...</div>
+            <p class="meta">Suggested crowded places:</p>
+            <ul class="places" id="placesList">
+              <li>Allow location to see nearby suggestions.</li>
+            </ul>
+            <iframe id="mapFrame" class="map" title="User location map" loading="lazy"></iframe>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- Screen 4: Ended call -->
+    <section class="screen" id="endedScreen">
+      <div class="centered">
+        <h2>Call Ended</h2>
+        <p class="subtitle">If you still feel unsafe, start the call again and move toward a busy, well-lit place.</p>
+        <button id="restartBtn" class="btn-main">Start Safety Call</button>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // Browser API references for voice input.
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    const state = {
+      callActive: false,
+      voiceReplies: true,
+      recognition: null,
+      location: null
+    };
+
+    // Main UI elements.
+    const statusPill = document.getElementById("statusPill");
+    const screens = {
+      start: document.getElementById("startScreen"),
+      incoming: document.getElementById("incomingScreen"),
+      active: document.getElementById("activeCallScreen"),
+      ended: document.getElementById("endedScreen")
+    };
+
+    const startCallBtn = document.getElementById("startCallBtn");
+    const answerBtn = document.getElementById("answerBtn");
+    const endIncomingBtn = document.getElementById("endIncomingBtn");
+    const endActiveBtn = document.getElementById("endActiveBtn");
+    const restartBtn = document.getElementById("restartBtn");
+
+    const messagesEl = document.getElementById("messages");
+    const userInputEl = document.getElementById("userInput");
+    const sendBtn = document.getElementById("sendBtn");
+    const micBtn = document.getElementById("micBtn");
+    const toggleVoiceBtn = document.getElementById("toggleVoiceBtn");
+
+    const coordsEl = document.getElementById("coords");
+    const placesListEl = document.getElementById("placesList");
+    const mapFrame = document.getElementById("mapFrame");
+
+    function showScreen(screenKey) {
+      Object.values(screens).forEach((screen) => screen.classList.remove("active"));
+      screens[screenKey].classList.add("active");
+    }
+
+    function setStatus(text) {
+      statusPill.textContent = text;
+    }
+
+    function addMessage(role, text) {
+      const bubble = document.createElement("div");
+      bubble.className = `message ${role === "assistant" ? "assistant-msg" : "user-msg"}`;
+      bubble.textContent = text;
+      messagesEl.appendChild(bubble);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+
+    // Uses SpeechSynthesis API to read AI responses aloud.
+    function speak(text) {
+      if (!state.voiceReplies || !window.speechSynthesis) {
+        return;
+      }
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = "en-US";
+      utterance.rate = 0.95;
+      utterance.pitch = 1;
+      
+      // Automatically start listening again after AI finishes speaking
+      utterance.onend = () => {
+        if (state.callActive && state.recognition) {
+          try {
+            state.recognition.start();
+          } catch (e) {
+            console.log("Recognition already started or error:", e);
+          }
+        }
+      };
+      
+      window.speechSynthesis.speak(utterance);
+    }
+
+    // Automatically start the call flow when the page loads
+    window.onload = () => {
+      // Small delay to ensure everything is ready
+      setTimeout(() => {
+        startCallFlow();
+      }, 500);
+    };
+
+    // Simulated AI API function. Replace with a real fetch() call when an API key is available.
+    async function getAIReply(userText) {
+      await new Promise((resolve) => setTimeout(resolve, 550));
+      const text = userText.toLowerCase();
+
+      const soundsScared = /(scared|unsafe|afraid|panic|follow|help|dark)/.test(text);
+      const mentionsPlace = /(cafe|shop|store|hospital|police|bus stop|metro|station)/.test(text);
+
+      let response = "I am here with you. Take one slow breath and tell me what is around you right now.";
+
+      if (soundsScared) {
+        response = "You are doing the right thing by staying on this call with me. Keep breathing slowly, and move toward a bright place where people are around.";
+      }
+
+      if (!mentionsPlace) {
+        response += " If you can, head to a nearby cafe, store, hospital, police station, bus stop, or metro station.";
+      }
+
+      response += " Would you like to share your live location with an emergency contact now?";
+      return response;
+    }
+
+    function renderPlaces(latitude, longitude) {
+      const base = [
+        "Cafe",
+        "Grocery Store",
+        "24x7 Pharmacy",
+        "Hospital",
+        "Police Station",
+        "Bus Stop",
+        "Metro Station"
+      ];
+
+      // Create simple mock nearby suggestions based on current coordinates.
+      placesListEl.innerHTML = "";
+      base.slice(0, 5).forEach((place, index) => {
+        const item = document.createElement("li");
+        item.textContent = `${place} - approx ${(index + 1) * 250}m away`;
+        placesListEl.appendChild(item);
+      });
+
+      mapFrame.src = `https://maps.google.com/maps?q=${latitude},${longitude}&z=15&output=embed`;
+    }
+
+    // Reads user coordinates using Geolocation API.
+    function requestLocation() {
+      if (!navigator.geolocation) {
+        coordsEl.textContent = "Geolocation is not supported in this browser.";
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const { latitude, longitude } = pos.coords;
+          state.location = { latitude, longitude };
+          coordsEl.textContent = `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
+          renderPlaces(latitude, longitude);
+        },
+        () => {
+          coordsEl.textContent = "Location permission denied. Enable location to show nearby safe places.";
+          placesListEl.innerHTML = "<li>Try moving to a busy place you already know nearby.</li>";
+          mapFrame.src = "https://maps.google.com/maps?q=20.5937,78.9629&z=4&output=embed";
+        }
+      );
+    }
+
+    async function handleUserMessage(text) {
+      const clean = text.trim();
+      if (!clean || !state.callActive) {
+        return;
+      }
+
+      addMessage("user", clean);
+      setStatus("Assistant is responding...");
+
+      const aiReply = await getAIReply(clean);
+      addMessage("assistant", aiReply);
+      speak(aiReply);
+      setStatus("On call");
+    }
+
+    function setupRecognition() {
+      if (!SpeechRecognition) {
+        setStatus("Speech recognition unsupported");
+        return null;
+      }
+
+      const recognition = new SpeechRecognition();
+      recognition.lang = "en-US";
+      recognition.continuous = false;
+      recognition.interimResults = false;
+
+      recognition.onstart = () => setStatus("Listening...");
+      recognition.onerror = () => setStatus("Could not hear clearly");
+      recognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
+        handleUserMessage(transcript);
+      };
+      recognition.onend = () => {
+        if (state.callActive && statusPill.textContent === "Listening...") {
+          setStatus("On call");
+        }
+      };
+
+      return recognition;
+    }
+
+    function startCallFlow() {
+      showScreen("incoming");
+      setStatus("Incoming call");
+    }
+
+    function answerCall() {
+      state.callActive = true;
+      messagesEl.innerHTML = "";
+      showScreen("active");
+      setStatus("On call");
+
+      if (!state.recognition) {
+        state.recognition = setupRecognition();
+      }
+
+      const greeting = "Hi, I'm your safety assistant. Are you feeling unsafe right now?";
+      addMessage("assistant", greeting);
+      speak(greeting);
+
+      requestLocation();
+      
+      // Automatically start listening after greeting
+      setTimeout(() => {
+        if (state.recognition && state.callActive) {
+          try {
+            state.recognition.start();
+          } catch (e) {
+            console.log("Recognition already started or error:", e);
+          }
+        }
+      }, 2000);
+    }
+
+    function endCall() {
+      state.callActive = false;
+      setStatus("Call ended");
+      if (window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
+      showScreen("ended");
+    }
+
+    startCallBtn.addEventListener("click", startCallFlow);
+    answerBtn.addEventListener("click", answerCall);
+    endIncomingBtn.addEventListener("click", endCall);
+    endActiveBtn.addEventListener("click", endCall);
+    restartBtn.addEventListener("click", startCallFlow);
+
+    sendBtn.addEventListener("click", () => {
+      handleUserMessage(userInputEl.value);
+      userInputEl.value = "";
+      userInputEl.focus();
+    });
+
+    userInputEl.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        sendBtn.click();
+      }
+    });
+
+    micBtn.addEventListener("click", () => {
+      if (!state.callActive) {
+        return;
+      }
+      if (!state.recognition) {
+        state.recognition = setupRecognition();
+      }
+      if (state.recognition) {
+        state.recognition.start();
+      }
+    });
+
+    toggleVoiceBtn.addEventListener("click", () => {
+      state.voiceReplies = !state.voiceReplies;
+      toggleVoiceBtn.textContent = `Voice Replies: ${state.voiceReplies ? "On" : "Off"}`;
+      if (!state.voiceReplies && window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
+    });
+  </script>
+</body>
+</html>

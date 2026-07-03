@@ -1,0 +1,117 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Document ID: userId (UID)
+    // Fields:
+    //   - uid: string (required, immutable)
+    //   - displayName: string (optional)
+    //   - email: string (required, immutable)
+    //   - photoURL: string (optional)
+    //   - role: string (required, enum: ['admin', 'user'])
+    //   - auraSensitivity: string (enum: ['Low', 'Medium', 'High'])
+    //   - autoDetect: bool
+    //   - emergencyContacts: list of maps
+    //
+    // Collection: alerts
+    // Document ID: alertId
+    // Fields:
+    //   - uid: string (required, immutable)
+    //   - timestamp: timestamp (required)
+    //   - location: map (lat, lng)
+    //   - status: string (enum: ['active', 'resolved', 'false-alarm'])
+    //   - event: string
+    //
+    // Collection: users/{userId}/safepoints
+    // Document ID: safepointId
+    // Fields:
+    //   - uid: string (required, immutable)
+    //   - name: string (required)
+    //   - latitude: number
+    //   - longitude: number
+    //   - type: string (enum: ['home', 'work', 'gym', 'other'])
+    //
+    // Collection: users/{userId}/scans
+    // Document ID: scanId
+    // Fields:
+    //   - uid: string (required, immutable)
+    //   - timestamp: timestamp (required)
+    //   - auraStability: string
+    //   - threatLevel: string
+    //   - confidence: number
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && 
+             ((exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+               get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin') ||
+              (request.auth.token.email == "saibhavaniyedla35@gmail.com"));
+    }
+
+    function areImmutableFieldsUnchanged(fields) {
+      return !request.resource.data.diff(resource.data).affectedKeys().hasAny(fields);
+    }
+
+    function isValidUser(data) {
+      return data.uid is string && data.uid == request.auth.uid &&
+             data.email is string &&
+             (data.role == null || data.role in ['admin', 'user']);
+    }
+
+    function isValidAlert(data) {
+      return data.uid is string && data.uid == request.auth.uid;
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      allow read: if isAuthenticated() && (isOwner(userId) || isAdmin());
+      allow create: if isAuthenticated() && isOwner(userId) && isValidUser(request.resource.data);
+      allow update: if isAuthenticated() && (isOwner(userId) || isAdmin()) && 
+                      (isAdmin() || (isValidUser(request.resource.data) && areImmutableFieldsUnchanged(['uid', 'email'])));
+      
+      match /safepoints/{safepointId} {
+        allow read: if isAuthenticated() && (isOwner(userId) || isAdmin());
+        allow write: if isAuthenticated() && isOwner(userId);
+      }
+
+      match /scans/{scanId} {
+        allow read: if isAuthenticated() && (isOwner(userId) || isAdmin());
+        allow create: if isAuthenticated() && isOwner(userId);
+        allow delete: if isAuthenticated() && isOwner(userId);
+      }
+    }
+
+    match /alerts/{alertId} {
+      allow read: if isAuthenticated() && (resource.data.uid == request.auth.uid || isAdmin());
+      allow create: if isAuthenticated() && isValidAlert(request.resource.data);
+      allow update: if isAuthenticated() && (resource.data.uid == request.auth.uid || isAdmin());
+      allow delete: if isAuthenticated() && (resource.data.uid == request.auth.uid || isAdmin());
+    }
+
+    // Default deny
+    match /{path=**} {
+      allow read, write: if false;
+    }
+  }
+}
